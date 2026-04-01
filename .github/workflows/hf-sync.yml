@@ -8,7 +8,10 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout full history
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # important: disables shallow clone
 
       - name: Push to Hugging Face Space
         env:
