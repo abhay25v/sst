@@ -1,0 +1,261 @@
+---
+# OpenEnv Configuration for Trust and Safety Decision Engine
+# https://openenv.org
+
+meta:
+  name: "Trust and Safety Decision Engine"
+  version: "1.0.0"
+  description: "RL environment for content moderation workflows with multi-stage decision-making"
+  authors:
+    - name: "OpenEnv Team"
+      email: "team@openenv.org"
+  license: "MIT"
+  homepage: "https://github.com/openenv/trust-safety-engine"
+  keywords:
+    - "content-moderation"
+    - "reinforcement-learning"
+    - "safety"
+    - "nlp"
+
+environment:
+  class: "TrustAndSafetyEnv"
+  module: "environment"
+  
+  methods:
+    - name: "reset"
+      parameters:
+        - name: "config"
+          type: "EpisodeConfig"
+          optional: true
+          description: "Episode configuration (difficulty, task_id, seed)"
+      returns: "ResetResult"
+      description: "Initialize a new episode"
+    
+    - name: "step"
+      parameters:
+        - name: "action"
+          type: "Action"
+          required: true
+          description: "Agent action string"
+      returns: "StepResult"
+      description: "Execute action and get result"
+    
+    - name: "state"
+      returns: "Dict[str, Any]"
+      description: "Get current environment state"
+
+observation:
+  type: "Observation"
+  module: "models"
+  fields:
+    - name: "content"
+      type: "string"
+      description: "Content to be moderated"
+    - name: "user_history"
+      type: "List[str]"
+      description: "User's previous posts"
+    - name: "previous_flags"
+      type: "List[str]"
+      description: "Previous moderation actions on user"
+    - name: "step_type"
+      type: "StepType"
+      values: ["analyze", "context", "decision"]
+      description: "Current stage of the episode"
+    - name: "last_action_error"
+      type: "bool"
+      description: "Whether previous action was invalid"
+    - name: "episode_id"
+      type: "string"
+      description: "Unique episode identifier"
+    - name: "step_number"
+      type: "int"
+      description: "Current step in the episode"
+    - name: "task_difficulty"
+      type: "string"
+      values: ["easy", "medium", "hard"]
+      description: "Task difficulty level"
+
+action:
+  type: "Action"
+  module: "models"
+  format: "string"
+  description: "Action taken by agent in stage-specific format"
+  
+  valid_formats:
+    - stage: "analyze"
+      format: "ANALYZE: toxicity=<level>, intent=<intent>"
+      parameters:
+        - name: "toxicity"
+          type: "string"
+          values: ["low", "medium", "high"]
+          required: true
+        - name: "intent"
+          type: "string"
+          values: ["benign", "suspicious", "malicious"]
+          required: true
+      description: "Classify content toxicity and user intent"
+    
+    - stage: "context"
+      format: "CHECK_HISTORY"
+      description: "Check user's content history and moderation flags"
+    
+    - stage: "decision"
+      format: "DECIDE: <decision> OR ESCALATE"
+      parameters:
+        - name: "decision"
+          type: "string"
+          values: ["ALLOW", "DELETE", "REDUCE_VISIBILITY", "ESCALATE"]
+          required: true
+      description: "Make final moderation decision"
+  
+  examples:
+    - "ANALYZE: toxicity=high, intent=malicious"
+    - "ANALYZE: toxicity=low, intent=benign"
+    - "CHECK_HISTORY"
+    - "DECIDE: DELETE"
+    - "DECIDE: ALLOW"
+    - "DECIDE: REDUCE_VISIBILITY"
+    - "ESCALATE"
+
+reward:
+  type: "float"
+  module: "reward"
+  range: [-1.0, 0.7]
+  scale: "per-step"
+  description: "Reward for each action, with partial credit for progress"
+  
+  components:
+    - name: "correct_analysis"
+      value: 0.3
+      trigger: "Correct toxicity and intent classification"
+    - name: "correct_context"
+      value: 0.3
+      trigger: "Appropriate use of history information"
+    - name: "correct_decision"
+      value: 0.7
+      trigger: "Correct final moderation decision"
+    - name: "wrong_delete"
+      value: -0.7
+      trigger: "Deleted non-harmful content"
+    - name: "missed_harmful"
+      value: -1.0
+      trigger: "Failed to delete harmful content"
+    - name: "unnecessary_escalate"
+      value: -0.2
+      trigger: "Escalated clear-cut cases"
+    - name: "invalid_action"
+      value: -0.1
+      trigger: "Action format invalid or unrecognized"
+
+episode:
+  max_steps: 3
+  reset_required: true
+  
+  stages:
+    - stage: "analyze"
+      step: 1
+      description: "Agent classifies content toxicity and user intent"
+      required: true
+    
+    - stage: "context"
+      step: 2
+      description: "Agent optionally reviews user history and flags"
+      required: false
+    
+    - stage: "decision"
+      step: 3
+      description: "Agent makes final moderation decision"
+      required: true
+
+tasks:
+  total: 12
+  embedded: true
+  difficulties:
+    - difficulty: "easy"
+      count: 4
+      description: "Obviously harmful content with clear policy violations"
+      features:
+        - "Death threats and explicit abuse"
+        - "Clear hate speech or genocidal language"
+        - "Obvious positive/benign content"
+        - "Low ambiguity"
+    
+    - difficulty: "medium"
+      count: 4
+      description: "Ambiguous content requiring context analysis"
+      features:
+        - "Professional criticism with strong language"
+        - "Vague group targeting requiring history"
+        - "Mixed signals needing user context"
+        - "Multiple interpretations possible"
+    
+    - difficulty: "hard"
+      count: 4
+      description: "Multi-step reasoning with conflicting signals"
+      features:
+        - "Coded or metaphorical language"
+        - "Specialized context (academic, activist)"
+        - "Potential false positives with keyword matching"
+        - "Requires expert judgment"
+
+grading:
+  type: "DeterministicGrader"
+  module: "reward"
+  method: "grade_episode"
+  score_range: [0.0, 1.0]
+  deterministic: true
+
+server:
+  type: "FastAPI"
+  module: "server"
+  host: "0.0.0.0"
+  port: 8000
+  
+  endpoints:
+    - method: "POST"
+      path: "/reset"
+      description: "Reset environment and start new episode"
+    
+    - method: "POST"
+      path: "/step"
+      description: "Take action and get result"
+    
+    - method: "GET"
+      path: "/state"
+      description: "Get current environment state"
+    
+    - method: "GET"
+      path: "/health"
+      description: "Health check endpoint"
+
+inference:
+  module: "inference"
+  class: "TrustAndSafetyInference"
+  entry_point: "main()"
+  
+  environment_variables:
+    - name: "OPENAI_API_KEY"
+      required: true
+      description: "OpenAI API key"
+    - name: "MODEL_NAME"
+      required: false
+      default: "gpt-4"
+      description: "Model identifier"
+    - name: "API_BASE_URL"
+      required: false
+      default: "https://api.openai.com/v1"
+      description: "API base URL"
+    - name: "HF_TOKEN"
+      required: false
+      description: "Hugging Face token"
+  
+  logging:
+    format: "structured"
+    tags: ["[START]", "[STEP]", "[END]"]
+
+docker:
+  base_image: "python:3.11-slim"
+  port: 8000
+  healthcheck:
+    enabled: true
+    path: "/health"
