@@ -1,0 +1,17 @@
+name: Sync to Hugging Face Space
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Sync with Hugging Face Hub
+        uses: huggingface/sync-with-hugging-face-hub@v0
+        with:
+          repo: abhay25v/openenv
+          token: ${{ secrets.HF_TOKEN }}
