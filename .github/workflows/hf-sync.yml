@@ -11,10 +11,14 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          git remote add space https://huggingface.co/spaces/abhay25v/openenv
-          git push space main
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+          # Add Hugging Face remote with token authentication
+          git remote add space https://Abhay25v:$HF_TOKEN@huggingface.co/spaces/abhay25v/openenv
+
+          # Push to Hugging Face Space
+          git push space main --force
