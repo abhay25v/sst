@@ -1,3 +1,12 @@
+---
+title: Trust and Safety Decision Engine
+emoji: 🛡️
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Trust and Safety Decision Engine
 
 A production-ready, OpenEnv-compatible reinforcement learning environment for content moderation. This environment simulates a real-world social media content moderation workflow with multi-stage decision-making.
