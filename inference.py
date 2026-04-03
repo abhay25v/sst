@@ -59,7 +59,7 @@ class TrustAndSafetyInference:
         self.model = model or os.getenv("MODEL_NAME", "gpt-4")
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.api_base = api_base or os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-        self.hf_token = os.getenv("HF_TOKEN", "")
+        self.hf_token = os.getenv("HF_TOKEN")
         
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
