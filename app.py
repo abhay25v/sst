@@ -23,19 +23,19 @@ class WebInterface:
         try:
             config = EpisodeConfig(difficulty=difficulty)
             reset_result = self.env.reset(config)
+            obs = reset_result.observation
             self.current_episode = {
-                'episode_id': reset_result.episode_id,
+                'episode_id': obs.episode_id,
                 'difficulty': difficulty,
-                'observation': reset_result.observation,
+                'observation': obs,
                 'total_reward': 0.0,
                 'steps': 0,
                 'actions': []
             }
             
-            obs = reset_result.observation
             display_text = f"""
 **Episode Started** 🎬
-- Episode ID: {reset_result.episode_id}
+- Episode ID: {obs.episode_id}
 - Difficulty: {difficulty}
 - Task: {obs.content[:100]}...
 
@@ -234,4 +234,4 @@ Example: `ANALYZE: toxicity=high, intent=malicious`
 
 if __name__ == "__main__":
     demo = build_interface()
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
