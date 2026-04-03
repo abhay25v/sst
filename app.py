@@ -1,91 +1,87 @@
 #!/usr/bin/env python3
-"""
-Gradio web interface for Trust and Safety Engine
-Optimized for Hugging Face Spaces
-"""
+"""Minimal Gradio app for HF Spaces"""
 
-import gradio as gr
-from environment import TrustAndSafetyEnv
-from models import Action, EpisodeConfig
+import sys
+print("🟢 Starting app.py...", flush=True)
 
+try:
+    import gradio as gr
+    print("✓ Gradio imported", flush=True)
+except Exception as e:
+    print(f"✗ Gradio error: {e}", flush=True)
+    sys.exit(1)
 
-def create_interface():
-    """Create Gradio interface."""
-    env = TrustAndSafetyEnv()
-    state = {'episode': None, 'total_reward': 0.0, 'steps': 0}
+try:
+    from environment import TrustAndSafetyEnv
+    from models import Action, EpisodeConfig
+    print("✓ Environment imported", flush=True)
+except Exception as e:
+    print(f"✗ Import error: {e}", flush=True)
+    sys.exit(1)
+
+# Lazy initialization - don't load env until needed
+env = None
+
+def get_env():
+    global env
+    if env is None:
+        env = TrustAndSafetyEnv()
+    return env
+
+state = {'episode_id': None, 'reward': 0.0, 'steps': 0}
+
+def reset(difficulty):
+    try:
+        env = get_env()
+        result = env.reset(EpisodeConfig(difficulty=difficulty))
+        obs = result.observation
+        state['episode_id'] = obs.episode_id
+        state['reward'] = 0.0
+        state['steps'] = 0
+        
+        return f"✅ Ready!\nEpisode: {obs.episode_id}\nContent: {obs.content[:80]}...", "Ready ✅", ""
+    except Exception as e:
+        return f"❌ {str(e)[:200]}", "Error", ""
+
+def action(txt):
+    if not state['episode_id']:
+        return "❌ Reset first", "Error", ""
+    try:
+        env = get_env()
+        result = env.step(Action(action=txt))
+        state['reward'] += result.reward
+        state['steps'] += 1
+        
+        msg = f"Step {state['steps']}\nReward: +{result.reward:.2f}\nTotal: {state['reward']:.2f}"
+        if result.done:
+            grade = result.info.get('grade', 0.0)
+            msg += f"\n✅ Done! Grade: {grade:.1%}"
+            state['episode_id'] = None
+        
+        return msg, f"Step {state['steps']}", ""
+    except Exception as e:
+        return f"❌ {str(e)[:200]}", "Error", ""
+
+print("🟢 Building interface...", flush=True)
+
+with gr.Blocks() as demo:
+    gr.Markdown("# 🛡️ Trust & Safety Engine")
     
-    def reset_episode(difficulty):
-        try:
-            config = EpisodeConfig(difficulty=difficulty)
-            result = env.reset(config)
-            obs = result.observation
-            state['episode'] = obs.episode_id
-            state['total_reward'] = 0.0
-            state['steps'] = 0
-            
-            text = f"""**Episode Started** 🎬
-Episode ID: {obs.episode_id}
-Difficulty: {difficulty}
-Content: {obs.content[:100]}...
-
-**Step 1: ANALYZE** 📊
-Enter: ANALYZE: toxicity=low/medium/high, intent=benign/suspicious/malicious"""
-            return text, "Ready ✅", ""
-        except Exception as e:
-            return f"Error: {e}", "Error ❌", ""
+    diff = gr.Radio(["easy", "medium", "hard"], value="easy", label="Level")
+    reset_btn = gr.Button("Reset", variant="primary")
     
-    def take_action(action_text):
-        if not state['episode']:
-            return "No episode. Reset first.", "Error", ""
-        if not action_text.strip():
-            return "Enter action.", "Error", ""
-        
-        try:
-            action = Action(action=action_text)
-            step_result = env.step(action)
-            state['steps'] += 1
-            state['total_reward'] += step_result.reward
-            
-            text = f"""**Step {state['steps']}** ✓
-Action: {action_text}
-Reward: +{step_result.reward:.2f}
-Total: {state['total_reward']:.2f}"""
-            
-            if step_result.done:
-                grade = step_result.info.get('grade', 0.0)
-                text += f"\n\n**Complete!** 🏁\nGrade: {grade:.1%}"
-                state['episode'] = None
-                status = f"Done! {grade:.1%}"
-            else:
-                status = f"Step {state['steps']}"
-            
-            return text, status, ""
-        except Exception as e:
-            return f"Error: {e}", "Error", ""
+    out = gr.Textbox(lines=8, interactive=False)
+    stat = gr.Textbox(interactive=False)
     
-    with gr.Blocks() as demo:
-        gr.Markdown("# 🛡️ Trust and Safety Engine")
-        
-        difficulty = gr.Radio(["easy", "medium", "hard"], value="easy", label="Difficulty")
-        reset_btn = gr.Button("Reset", variant="primary")
-        
-        output = gr.Textbox(label="Output", lines=10, interactive=False)
-        status = gr.Textbox(label="Status", interactive=False)
-        
-        action = gr.Textbox(label="Action", lines=2, placeholder="ANALYZE: toxicity=high, intent=malicious")
-        action_btn = gr.Button("Take Action", variant="primary")
-        
-        reset_btn.click(reset_episode, [difficulty], [output, status, action])
-        action_btn.click(take_action, [action], [output, status, action])
-        action.submit(take_action, [action], [output, status, action])
+    act = gr.Textbox(label="Action", lines=1, placeholder="ANALYZE: toxicity=high, intent=malicious")
+    btn = gr.Button("Go", variant="primary")
     
-    return demo
+    reset_btn.click(reset, [diff], [out, stat, act])
+    btn.click(action, [act], [out, stat, act])
+    act.submit(action, [act], [out, stat, act])
 
-
-demo = create_interface()
-
-if __name__ == "__main__":
-    demo.launch()
+print("🟢 Launching demo...", flush=True)
+demo.launch()
     """Interactive Gradio interface for the Trust and Safety Engine."""
     
     def __init__(self):
