@@ -1,7 +1,7 @@
 """
 Reward function and grading logic for the Trust and Safety Decision Engine.
 """
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import re
 
 
@@ -326,7 +326,7 @@ class EpisodeAnalyzer:
         step_types: List[str],
         rewards: List[float],
         ground_truth_decision: str
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Analyze episode performance.
         

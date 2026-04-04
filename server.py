@@ -15,11 +15,18 @@ from models import Action, EpisodeConfig, Observation, StepResult
 
 
 # Initialize FastAPI app
+import sys
+print("=" * 80, file=sys.stderr, flush=True)
+print("Initializing Trust and Safety Decision Engine Server", file=sys.stderr, flush=True)
+print("=" * 80, file=sys.stderr, flush=True)
+
 app = FastAPI(
     title="Trust and Safety Decision Engine",
     description="OpenEnv-compatible RL environment for content moderation",
     version="1.0.0",
 )
+
+print("FastAPI app initialized successfully", file=sys.stderr, flush=True)
 
 # Add CORS middleware
 app.add_middleware(
@@ -29,6 +36,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Log application startup."""
+    print("\n" + "=" * 80, file=sys.stderr, flush=True)
+    print("✅ Trust and Safety Decision Engine is READY", file=sys.stderr, flush=True)
+    print("📊 All endpoints available", file=sys.stderr, flush=True)
+    print("=" * 80 + "\n", file=sys.stderr, flush=True)
+    logging.info("Application startup complete - all endpoints ready")
 
 # Setup logging
 log_buffer = deque(maxlen=500)  # Keep last 500 log entries
@@ -55,8 +72,15 @@ buffering_handler = BufferingHandler()
 buffering_handler.setFormatter(logging.Formatter('%(asctime)s'))
 logging.getLogger().addHandler(buffering_handler)
 
-# Global environment instance
-env = TrustAndSafetyEnv()
+# Global environment instance - lazy initialization
+_env = None
+
+def get_env() -> TrustAndSafetyEnv:
+    """Get or create the global environment instance."""
+    global _env
+    if _env is None:
+        _env = TrustAndSafetyEnv()
+    return _env
 
 
 # Request/Response models
@@ -120,7 +144,7 @@ async def reset(request: ResetRequest):
             task_id=request.task_id,
             seed=request.seed,
         )
-        reset_result = env.reset(config)
+        reset_result = get_env().reset(config)
         
         return ResetResponse(
             episode_id=reset_result.info["episode_id"],
@@ -153,14 +177,14 @@ async def step(request: StepRequest):
         - "ESCALATE"
     """
     try:
-        if env.episode_id is None:
+        if get_env().episode_id is None:
             raise HTTPException(
                 status_code=400,
                 detail="Must call /reset before /step"
             )
         
         action = Action(action=request.action)
-        result = env.step(action)
+        result = get_env().step(action)
         
         return StepResponse(
             observation=result.observation,
@@ -183,13 +207,13 @@ async def state():
         Current environment state including actions, rewards, and episode info
     """
     try:
-        if env.episode_id is None:
+        if get_env().episode_id is None:
             raise HTTPException(
                 status_code=400,
                 detail="No active episode. Call /reset first."
             )
         
-        return StateResponse(state=env.state())
+        return StateResponse(state=get_env().state())
     except HTTPException:
         raise
     except Exception as e:
@@ -204,7 +228,7 @@ async def info():
     Returns:
         Environment metadata including action/observation spaces and reward range
     """
-    return InfoResponse(info=env.get_info())
+    return InfoResponse(info=get_env().get_info())
 
 
 @app.get("/health")
@@ -267,4 +291,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+    print("\n" + "=" * 80, file=sys.stderr, flush=True)
+    print("🚀 Starting Uvicorn server on http://0.0.0.0:8000", file=sys.stderr, flush=True)
+    print("=" * 80 + "\n", file=sys.stderr, flush=True)
     uvicorn.run(app, host="0.0.0.0", port=8000)
