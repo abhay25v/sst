@@ -61,14 +61,19 @@ class TrustAndSafetyInference:
         self.api_base = api_base or os.getenv("API_BASE_URL", "https://api.openai.com/v1")
         self.hf_token = os.getenv("HF_TOKEN")
         
-        if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+        # Allow dummy key for non-inference operations
+        if not self.api_key and "_FORCE_INFERENCE_" in os.environ:
+            raise ValueError("OPENAI_API_KEY environment variable not set but inference is being used")
         
-        # Initialize OpenAI client with base URL
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.api_base
-        )
+        # Initialize OpenAI client with base URL (defer if no API key)
+        if self.api_key:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.api_base
+            )
+        else:
+            self.client = None
+        
         self.env = TrustAndSafetyEnv()
         self.system_prompt = self._build_system_prompt()
     
