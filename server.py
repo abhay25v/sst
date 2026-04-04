@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 import json
+import logging
+from collections import deque
 
 from environment import TrustAndSafetyEnv
 from models import Action, EpisodeConfig, Observation, StepResult
@@ -27,6 +29,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Setup logging
+log_buffer = deque(maxlen=500)  # Keep last 500 log entries
+
+class BufferingHandler(logging.Handler):
+    """Custom logging handler that stores logs in memory."""
+    def emit(self, record):
+        log_entry = {
+            "timestamp": self.format(record),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        log_buffer.append(log_entry)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Add buffering handler to root logger
+buffering_handler = BufferingHandler()
+buffering_handler.setFormatter(logging.Formatter('%(asctime)s'))
+logging.getLogger().addHandler(buffering_handler)
 
 # Global environment instance
 env = TrustAndSafetyEnv()
@@ -190,6 +217,26 @@ async def health():
     }
 
 
+@app.get("/logs")
+async def logs(limit: int = 100):
+    """
+    Get recent application logs.
+    
+    Args:
+        limit: Maximum number of log entries to return (max 500)
+    
+    Returns:
+        List of recent log entries with timestamp, level, logger, and message
+    """
+    limit = min(limit, 500)  # Cap at 500
+    recent_logs = list(log_buffer)[-limit:]
+    return {
+        "total_logs": len(log_buffer),
+        "returned": len(recent_logs),
+        "logs": recent_logs,
+    }
+
+
 @app.get("/")
 async def root():
     """Root endpoint with API documentation."""
@@ -203,6 +250,7 @@ async def root():
             "GET /state": "Get current environment state",
             "GET /info": "Get environment information",
             "GET /health": "Health check",
+            "GET /logs": "Get recent application logs (query param: limit=100)",
             "GET /docs": "API documentation (Swagger UI)",
             "GET /redoc": "Alternative API documentation (ReDoc)",
         },
@@ -212,6 +260,7 @@ async def root():
             "3_step": "POST /step with {\"action\": \"CHECK_HISTORY\"}",
             "4_step": "POST /step with {\"action\": \"DECIDE: DELETE\"}",
             "5_state": "GET /state to view final results",
+            "check_logs": "GET /logs?limit=50 to see recent logs",
         },
     }
 
