@@ -9,9 +9,23 @@ from typing import Optional, Dict, Any
 import json
 import logging
 from collections import deque
+import signal
+import sys
 
 from environment import TrustAndSafetyEnv
 from models import Action, EpisodeConfig, Observation, StepResult
+
+
+# Signal handlers to catch shutdown
+def signal_handler(signum, frame):
+    """Handle shutdown signals."""
+    print(f"\n[SIGNAL] Received signal {signum} - initiating shutdown", file=sys.stderr, flush=True)
+    logging.info(f"Received signal {signum}")
+    sys.exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
 
 
 # Initialize FastAPI app

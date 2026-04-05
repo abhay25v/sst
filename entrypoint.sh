@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 echo "=========================================="
 echo "Docker Container Entrypoint Started"
@@ -29,8 +28,17 @@ print('[3/3] App object exists...')
 print(f'[3/3] ✓ App: {server.app}')
 "
 
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Import tests failed" >&2
+    exit 1
+fi
+
 echo ""
 echo "=========================================="
 echo "Starting Uvicorn Server"
 echo "=========================================="
+echo "[$(date)] Server startup initiated"
+
+# Replace this shell with Uvicorn (will keep running)
 exec python -m uvicorn server:app --host 0.0.0.0 --port 8000
+

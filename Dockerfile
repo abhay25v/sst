@@ -35,9 +35,5 @@ RUN chmod +x entrypoint.sh
 # Expose port
 EXPOSE 8000
 
-# Health check with better diagnostics  
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/alive || (echo "Health check failed" && exit 1)
-
 # Use entrypoint script for better logging
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
