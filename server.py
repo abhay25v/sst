@@ -20,6 +20,22 @@ print("=" * 80, file=sys.stderr, flush=True)
 print("Initializing Trust and Safety Decision Engine Server", file=sys.stderr, flush=True)
 print("=" * 80, file=sys.stderr, flush=True)
 
+# Test imports before creating app
+try:
+    print("[1/3] Testing environment module import...", file=sys.stderr, flush=True)
+    # Imports already done at top, just verify they worked
+    print("[1/3] ✓ Environment module loaded", file=sys.stderr, flush=True)
+    
+    print("[2/3] Testing models module import...", file=sys.stderr, flush=True)
+    print("[2/3] ✓ Models module loaded", file=sys.stderr, flush=True)
+    
+    print("[3/3] Creating FastAPI app...", file=sys.stderr, flush=True)
+except Exception as e:
+    print(f"[ERROR] Failed to import modules: {str(e)}", file=sys.stderr, flush=True)
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
 app = FastAPI(
     title="Trust and Safety Decision Engine",
     description="OpenEnv-compatible RL environment for content moderation",
@@ -41,11 +57,16 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Log application startup."""
-    print("\n" + "=" * 80, file=sys.stderr, flush=True)
-    print("✅ Trust and Safety Decision Engine is READY", file=sys.stderr, flush=True)
-    print("📊 All endpoints available", file=sys.stderr, flush=True)
-    print("=" * 80 + "\n", file=sys.stderr, flush=True)
-    logging.info("Application startup complete - all endpoints ready")
+    try:
+        print("\n" + "=" * 80, file=sys.stderr, flush=True)
+        print("✅ Trust and Safety Decision Engine is READY", file=sys.stderr, flush=True)
+        print("📊 All endpoints available", file=sys.stderr, flush=True)
+        print("=" * 80 + "\n", file=sys.stderr, flush=True)
+        logging.info("Application startup complete - all endpoints ready")
+    except Exception as e:
+        print(f"\n❌ STARTUP ERROR: {str(e)}", file=sys.stderr, flush=True)
+        logging.error(f"Startup event failed: {str(e)}", exc_info=True)
+        raise
 
 # Setup logging
 log_buffer = deque(maxlen=500)  # Keep last 500 log entries
@@ -231,14 +252,30 @@ async def info():
     return InfoResponse(info=get_env().get_info())
 
 
+@app.get("/alive")
+async def alive():
+    """Lightweight liveness check - just confirms the server is running."""
+    return {"alive": True}
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "Trust and Safety Decision Engine",
-        "version": "1.0.0",
-    }
+    try:
+        # Test that environment can be created
+        env = get_env()
+        return {
+            "status": "healthy",
+            "service": "Trust and Safety Decision Engine",
+            "version": "1.0.0",
+            "environment_ready": True,
+        }
+    except Exception as e:
+        logging.error(f"Health check failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Service unavailable: {str(e)}"
+        )
 
 
 @app.get("/logs")

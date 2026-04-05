@@ -29,9 +29,9 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Health check with better diagnostics
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:8000/health || (echo "Health check failed" && exit 1)
+# Health check with better diagnostics  
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/alive || (echo "Health check failed" && exit 1)
 
 # Default command: run the FastAPI server
 CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
