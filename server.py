@@ -331,4 +331,12 @@ if __name__ == "__main__":
     print("\n" + "=" * 80, file=sys.stderr, flush=True)
     print("🚀 Starting Uvicorn server on http://0.0.0.0:8000", file=sys.stderr, flush=True)
     print("=" * 80 + "\n", file=sys.stderr, flush=True)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    except Exception as e:
+        print(f"\n❌ UVICORN ERROR: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    finally:
+        print("\n[FINAL LOG] Server process exiting", file=sys.stderr, flush=True)
