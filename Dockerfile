@@ -19,9 +19,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Install Python dependencies with explicit versions
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Verify FastAPI installation
+RUN python -c "from fastapi import FastAPI; print('✓ FastAPI verified')" || exit 1
 
 # Copy application code
 COPY . .
