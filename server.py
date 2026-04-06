@@ -145,7 +145,7 @@ class InfoResponse(BaseModel):
 # Endpoints
 
 @app.post("/reset", response_model=ResetResponse)
-async def reset(request: ResetRequest):
+async def reset(request: Optional[ResetRequest] = None):
     """
     Reset the environment and start a new episode.
     
@@ -157,9 +157,13 @@ async def reset(request: ResetRequest):
     
     Example:
         POST /reset
-        {"difficulty": "medium"}
+        {} or {"difficulty": "medium"}
     """
     try:
+        # Use provided request or create default
+        if request is None:
+            request = ResetRequest()
+        
         config = EpisodeConfig(
             difficulty=request.difficulty,
             task_id=request.task_id,
