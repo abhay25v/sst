@@ -16,24 +16,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Copy requirements first
 COPY requirements.txt .
 
-# Install Python dependencies with explicit versions
+# Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
-# Verify FastAPI installation
+# Verify critical dependencies
 RUN python -c "from fastapi import FastAPI; print('✓ FastAPI verified')" || exit 1
 
 # Copy application code
 COPY . .
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
-
-# Expose port
+# Expose port (HF Spaces expects 7860 or uses the one you specify)
 EXPOSE 8000
 
-# Use entrypoint script for better logging
-ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+# Simple CMD - let Uvicorn handle everything
+CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
