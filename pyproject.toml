@@ -60,10 +60,7 @@ Documentation = "https://github.com/abhay25v/openenv#readme"
 Issues = "https://github.com/abhay25v/openenv/issues"
 
 [tool.setuptools]
-packages = [".", "src"]
-package-data = {
-    "" = ["*.yaml", "*.yml", "*.json", "*.txt"],
-}
+packages = ["trust_safety_engine"]
 
 [tool.setuptools.package-data]
 trust_safety_engine = ["*.yaml", "*.yml", "*.json"]
