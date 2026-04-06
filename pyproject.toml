@@ -1,0 +1,116 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trust-safety-engine"
+version = "1.0.0"
+description = "OpenEnv environment for content moderation with multi-stage decision-making"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "OpenEnv Contributors", email = "team@openenv.org"}
+]
+keywords = [
+    "content-moderation",
+    "reinforcement-learning",
+    "openenv",
+    "safety",
+    "nlp",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "pydantic>=2.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "openai>=1.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "gradio>=4.0",
+    "requests>=2.31.0",
+    "openenv-core>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "ipython>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/abhay25v/openenv"
+Repository = "https://github.com/abhay25v/openenv.git"
+Documentation = "https://github.com/abhay25v/openenv#readme"
+Issues = "https://github.com/abhay25v/openenv/issues"
+
+[tool.setuptools]
+packages = [".", "src"]
+package-data = {
+    "" = ["*.yaml", "*.yml", "*.json", "*.txt"],
+}
+
+[tool.setuptools.package-data]
+trust_safety_engine = ["*.yaml", "*.yml", "*.json"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "W", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+exclude = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-v --tb=short --cov=. --cov-report=term-missing"
+testpaths = ["tests", "test_*.py"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
