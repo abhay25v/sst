@@ -60,7 +60,7 @@ Documentation = "https://github.com/abhay25v/openenv#readme"
 Issues = "https://github.com/abhay25v/openenv/issues"
 
 [project.scripts]
-trust-safety-server = "server.app:app"
+server = "server.app:main"
 
 [tool.setuptools]
 packages = ["trust_safety_engine"]
