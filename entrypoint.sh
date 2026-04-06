@@ -7,25 +7,32 @@ echo "Python version:"
 python --version
 
 echo ""
-echo "Testing imports..."
+echo "Testing basic imports..."
 python -c "
 import sys
-print('[1/3] Importing FastAPI...')
-from fastapi import FastAPI
-print('[1/3] ✓ FastAPI imported')
-
-print('[2/3] Importing server module...')
+print('[1/3] Testing FastAPI...')
 try:
-    import server
-    print('[2/3] ✓ Server module imported')
+    from fastapi import FastAPI
+    print('[1/3] ✓ FastAPI OK')
 except Exception as e:
-    print(f'[2/3] ✗ ERROR: {e}')
-    import traceback
-    traceback.print_exc()
+    print(f'[1/3] ✗ FastAPI import failed: {e}')
     sys.exit(1)
 
-print('[3/3] App object exists...')
-print(f'[3/3] ✓ App: {server.app}')
+print('[2/3] Testing Uvicorn...')
+try:
+    import uvicorn
+    print('[2/3] ✓ Uvicorn OK')
+except Exception as e:
+    print(f'[2/3] ✗ Uvicorn import failed: {e}')
+    sys.exit(1)
+
+print('[3/3] Testing Pydantic...')
+try:
+    from pydantic import BaseModel
+    print('[3/3] ✓ Pydantic OK')
+except Exception as e:
+    print(f'[3/3] ✗ Pydantic import failed: {e}')
+    sys.exit(1)
 "
 
 if [ $? -ne 0 ]; then
@@ -35,10 +42,10 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Starting Uvicorn Server"
+echo "Starting Uvicorn Server (will NOT import server.py)"
 echo "=========================================="
-echo "[$(date)] Server startup initiated"
 
-# Replace this shell with Uvicorn (will keep running)
-exec python -m uvicorn server:app --host 0.0.0.0 --port 8000
+# Let Uvicorn handle graceful shutdown
+# Do NOT use signal handlers in the script
+exec python -m uvicorn server:app --host 0.0.0.0 --port 8000 --access-log
 
