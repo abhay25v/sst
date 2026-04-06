@@ -330,7 +330,8 @@ async def root():
     }
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for running the server."""
     import uvicorn
     print("\n" + "=" * 80, file=sys.stderr, flush=True)
     print("🚀 Starting Uvicorn server on http://0.0.0.0:8000", file=sys.stderr, flush=True)
@@ -344,4 +345,8 @@ if __name__ == "__main__":
         sys.exit(1)
     finally:
         print("\n[FINAL LOG] Server process exiting", file=sys.stderr, flush=True)
+
+
+if __name__ == "__main__":
+    main()
 
