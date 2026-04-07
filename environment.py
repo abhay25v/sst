@@ -175,6 +175,7 @@ class TrustAndSafetyEnv:
             "episode_id": self.episode_id,
             "step_number": self.step_number,
             "current_step_type": str(self.current_step_type),
+            "step_types": [str(st) for st in self.step_types],
             "actions_taken": self.actions_taken,
             "rewards_received": self.rewards_received,
             "last_action_error": self.last_action_error,
