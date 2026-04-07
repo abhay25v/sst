@@ -18,6 +18,28 @@ class Task:
     ground_truth_intent: str    # benign, suspicious, malicious
     ground_truth_decision: str  # ALLOW, REDUCE_VISIBILITY, DELETE, ESCALATE
     reasoning: str
+    
+    def grade(self, actions: List[str], step_types: List[str]) -> float:
+        """
+        Grade this task's episode performance.
+        
+        Args:
+            actions: List of actions taken during the episode
+            step_types: List of step types for each action
+        
+        Returns:
+            Score strictly between 0 and 1 (not including endpoints)
+        """
+        from reward import DeterministicGrader
+        return DeterministicGrader.grade_episode(
+            actions=actions,
+            step_types=step_types,
+            ground_truth_toxicity=self.ground_truth_toxicity,
+            ground_truth_intent=self.ground_truth_intent,
+            ground_truth_decision=self.ground_truth_decision,
+            user_history_length=len(self.user_history),
+            previous_flags_length=len(self.previous_flags),
+        )
 
 
 class Dataset:

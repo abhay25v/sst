@@ -195,7 +195,7 @@ class DeterministicGrader:
         Returns:
             Score strictly between 0 and 1 (not 0.0 or 1.0)
         """
-        eps = 0.01  # 1% margin from boundaries
+        eps = 0.05  # 5% margin from boundaries
         
         if not actions or not step_types:
             return eps  # Return epsilon instead of exact 0.0
@@ -224,8 +224,8 @@ class DeterministicGrader:
         
         # Normalize to (0, 1) - strictly between, not including endpoints
         # Validator requires scores strictly between 0 and 1, not 0.0 or 1.0
-        # Use larger epsilon to ensure no exact boundaries
-        eps = 0.01  # 1% margin from boundaries
+        # Use very conservative epsilon to ensure no boundary values
+        eps = 0.05  # 5% margin from boundaries to be safe
         score = (final_score + 1.0) / 2.0  # Maps [-1, 1] to [0, 1]
         return max(eps, min(1.0 - eps, score))
     
