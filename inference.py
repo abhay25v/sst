@@ -52,27 +52,26 @@ class TrustAndSafetyInference:
         
         Args:
             model: OpenAI model to use (defaults to MODEL_NAME env var)
-            api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
+            api_key: OpenAI API key (defaults to API_KEY env var)
             api_base: API base URL (defaults to API_BASE_URL env var)
         """
-        # Read from environment variables with defaults
+        # Read from environment variables - use validator-provided credentials
         self.model = model or os.getenv("MODEL_NAME", "gpt-4")
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.api_base = api_base or os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+        self.api_key = api_key or os.getenv("API_KEY")  # Use API_KEY (validator-provided)
+        self.api_base = api_base or os.getenv("API_BASE_URL")  # Use API_BASE_URL proxy
         self.hf_token = os.getenv("HF_TOKEN")
         
-        # Allow dummy key for non-inference operations
-        if not self.api_key and "_FORCE_INFERENCE_" in os.environ:
-            raise ValueError("OPENAI_API_KEY environment variable not set but inference is being used")
+        # Require API credentials for inference
+        if not self.api_key:
+            raise ValueError("API_KEY environment variable not set. This is required for inference.")
+        if not self.api_base:
+            raise ValueError("API_BASE_URL environment variable not set. This is required for inference.")
         
-        # Initialize OpenAI client with base URL (defer if no API key)
-        if self.api_key:
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url=self.api_base
-            )
-        else:
-            self.client = None
+        # Initialize OpenAI client with validator-provided base URL
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.api_base
+        )
         
         self.env = TrustAndSafetyEnv()
         self.system_prompt = self._build_system_prompt()
