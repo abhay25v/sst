@@ -220,8 +220,11 @@ class DeterministicGrader:
         # Weighted final score
         final_score = (analyze_score * 0.25 + context_score * 0.25 + decision_score * 0.5)
         
-        # Normalize to 0.0-1.0
-        return max(0.0, min(1.0, (final_score + 1.0) / 2.0))
+        # Normalize to (0, 1) - strictly between, not including endpoints
+        # Validator requires scores strictly between 0 and 1, not 0.0 or 1.0
+        eps = 0.001  # Small epsilon to avoid exact boundaries
+        score = (final_score + 1.0) / 2.0  # Maps [-1, 1] to [0, 1]
+        return max(eps, min(1.0 - eps, score))
     
     @staticmethod
     def _score_analyze_action(action: str, ground_truth_toxicity: str, ground_truth_intent: str) -> float:
