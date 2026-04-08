@@ -176,8 +176,29 @@ class RewardCalculator:
 class DeterministicGrader:
     """
     Deterministic grader for evaluating full episodes.
-    Returns scores from 0.0 to 1.0.
+    Returns scores strictly between 0 and 1 (NEVER 0.0 or 1.0).
     """
+    
+    @staticmethod
+    def _ensure_valid_score(score: float) -> float:
+        """
+        Ensure score is strictly between 0 and 1.
+        This is a final safety check to prevent any exact boundaries.
+        """
+        # Absolute minimum and maximum that are not exact boundaries
+        MIN_SCORE = 0.0001
+        MAX_SCORE = 0.9999
+        
+        # Ensure within bounds
+        bounded = max(MIN_SCORE, min(MAX_SCORE, score))
+        
+        # Add tiny jitter if exactly at MIN or MAX
+        if abs(bounded - MIN_SCORE) < 1e-10:
+            bounded = MIN_SCORE + 1e-6
+        elif abs(bounded - MAX_SCORE) < 1e-10:
+            bounded = MAX_SCORE - 1e-6
+        
+        return bounded
     
     @staticmethod
     def grade_episode(
@@ -197,7 +218,8 @@ class DeterministicGrader:
         """
         if not actions or not step_types:
             # Return epsilon with jitter to avoid exact 0.05
-            return 0.05 + 0.001 * (len(actions) + len(step_types) + 1) % 3
+            base_score = 0.05 + 0.001 * (len(actions) + len(step_types) + 1) % 3
+            return DeterministicGrader._ensure_valid_score(base_score)
         
         analyze_score = 0.0
         context_score = 0.0
@@ -230,8 +252,9 @@ class DeterministicGrader:
         jitter = 0.002 * ((score * 100) % 1)  # 0.002 based on decimal part
         score_with_jitter = score + jitter
         
-        # Final bounds: strictly between [0.001, 0.999]
-        return max(0.001, min(0.999, score_with_jitter))
+        # Final bounds using safety wrapper
+        final_score = max(0.001, min(0.999, score_with_jitter))
+        return DeterministicGrader._ensure_valid_score(final_score)
     
     @staticmethod
     def _score_analyze_action(action: str, ground_truth_toxicity: str, ground_truth_intent: str) -> float:

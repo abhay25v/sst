@@ -19,6 +19,30 @@ class Task:
     ground_truth_decision: str  # ALLOW, REDUCE_VISIBILITY, DELETE, ESCALATE
     reasoning: str
     
+    def __post_init__(self):
+        """Initialize grader after dataclass init."""
+        self._setup_grader()
+    
+    def _setup_grader(self):
+        """Setup grader callable."""
+        task_ref = self
+        
+        def grader_fn(actions: List[str], step_types: List[str]) -> float:
+            """Grader function for this task."""
+            from reward import DeterministicGrader
+            return DeterministicGrader.grade_episode(
+                actions=actions,
+                step_types=step_types,
+                ground_truth_toxicity=task_ref.ground_truth_toxicity,
+                ground_truth_intent=task_ref.ground_truth_intent,
+                ground_truth_decision=task_ref.ground_truth_decision,
+                user_history_length=len(task_ref.user_history),
+                previous_flags_length=len(task_ref.previous_flags),
+            )
+        
+        # Make grader callable available multiple ways
+        self._grader_fn = grader_fn
+    
     def grade(self, actions: List[str], step_types: List[str]) -> float:
         """
         Grade this task's episode performance.
@@ -30,16 +54,12 @@ class Task:
         Returns:
             Score strictly between 0 and 1 (not including endpoints)
         """
-        from reward import DeterministicGrader
-        return DeterministicGrader.grade_episode(
-            actions=actions,
-            step_types=step_types,
-            ground_truth_toxicity=self.ground_truth_toxicity,
-            ground_truth_intent=self.ground_truth_intent,
-            ground_truth_decision=self.ground_truth_decision,
-            user_history_length=len(self.user_history),
-            previous_flags_length=len(self.previous_flags),
-        )
+        return self._grader_fn(actions, step_types)
+    
+    @property
+    def grader(self):
+        """Grader callable for this task."""
+        return self._grader_fn
 
 
 class Dataset:
