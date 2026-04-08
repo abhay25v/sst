@@ -202,8 +202,9 @@ grading:
   type: "DeterministicGrader"
   module: "reward"
   method: "grade_episode"
-  score_range: [0.0, 1.0]
+  score_range: (0.0, 1.0)
   deterministic: true
+  note: "Scores must be strictly between 0 and 1 (not including endpoints)"
 
 server:
   type: "FastAPI"
