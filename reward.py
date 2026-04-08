@@ -251,14 +251,14 @@ class DeterministicGrader:
             if "toxicity" in parsed:
                 checks += 1
                 if parsed["toxicity"] == ground_truth_toxicity.lower():
-                    score += 1.0
+                    score += 0.99  # Near 1.0 but not exact
                 else:
                     score -= 0.5
             
             if "intent" in parsed:
                 checks += 1
                 if parsed["intent"] == ground_truth_intent.lower():
-                    score += 1.0
+                    score += 0.99  # Near 1.0 but not exact
                 else:
                     score -= 0.5
             
@@ -275,9 +275,9 @@ class DeterministicGrader:
         if action.strip() == "CHECK_HISTORY":
             context_needed = (user_history_length + previous_flags_length) > 0
             if context_needed:
-                return 1.0
+                return 0.99  # Near 1.0 but not exact
             else:
-                return 0.5  # Neutral if no context to check
+                return 0.49  # Near 0.5 but not exact
         return -1.0
     
     @staticmethod
@@ -295,7 +295,7 @@ class DeterministicGrader:
                 return -1.0
             
             if decision == ground_truth_decision:
-                return 1.0
+                return 0.99  # Near 1.0 but not exact
             
             # Partial credit for reasonable alternatives
             similarity = DeterministicGrader._decision_similarity(decision, ground_truth_decision)
@@ -314,13 +314,13 @@ class DeterministicGrader:
         }
         
         if predicted == ground_truth:
-            return 1.0
+            return 0.99  # Near 1.0 but not exact
         
         if predicted not in decision_hierarchy or ground_truth not in decision_hierarchy:
-            return 0.0
+            return 0.01  # Near 0.0 but not exact
         
         distance = abs(decision_hierarchy[predicted] - decision_hierarchy[ground_truth])
-        return max(0.0, 1.0 - (distance * 0.25))
+        return max(0.01, 0.99 - (distance * 0.25))  # Bounds [0.01, 0.99]
 
 
 class EpisodeAnalyzer:
