@@ -42,6 +42,7 @@ class Task:
         
         # Make grader callable available multiple ways
         self._grader_fn = grader_fn
+        setattr(self, '__grader__', grader_fn)
     
     def grade(self, actions: List[str], step_types: List[str]) -> float:
         """
@@ -243,3 +244,11 @@ class Dataset:
             return cls.HARD_TASKS
         else:
             raise ValueError(f"Unknown difficulty: {difficulty}")
+
+
+# Module-level exports for validator discovery
+ALL_TASKS = Dataset.get_all_tasks()
+TASK_GRADERS = {task.task_id: task.grader for task in ALL_TASKS}
+
+# Explicit task references for validator
+TASKS_WITH_GRADERS = ALL_TASKS  # All 12 tasks have graders
