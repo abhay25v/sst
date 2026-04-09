@@ -390,3 +390,57 @@ class EpisodeAnalyzer:
             "correct": correct,
             "accuracy": 1.0 if correct else 0.0,
         }
+
+
+# ============================================================================
+# Task-level graders - Exposed at module level for OpenEnv validator
+# ============================================================================
+
+def _create_task_graders():
+    """Create grader functions for all tasks at module level."""
+    from dataset import Dataset
+    
+    graders = {}
+    for task in Dataset.get_all_tasks():
+        task_id = task.task_id
+        # Create a closure that captures this specific task
+        def make_grader(t):
+            def grader(actions, step_types):
+                return DeterministicGrader.grade_episode(
+                    actions=actions,
+                    step_types=step_types,
+                    ground_truth_toxicity=t.ground_truth_toxicity,
+                    ground_truth_intent=t.ground_truth_intent,
+                    ground_truth_decision=t.ground_truth_decision,
+                    user_history_length=len(t.user_history),
+                    previous_flags_length=len(t.previous_flags),
+                )
+            return grader
+        
+        graders[task_id] = make_grader(task)
+    
+    return graders
+
+
+# Build and export task graders
+try:
+    _TASK_GRADERS = _create_task_graders()
+except ImportError:
+    # If dataset not available yet, create empty dict
+    _TASK_GRADERS = {}
+
+
+def get_grader(task_id: str):
+    """Get grader function for a specific task ID."""
+    if task_id not in _TASK_GRADERS:
+        # Try to rebuild if not found
+        try:
+            _TASK_GRADERS.clear()
+            _TASK_GRADERS.update(_create_task_graders())
+        except ImportError:
+            pass
+    
+    if task_id in _TASK_GRADERS:
+        return _TASK_GRADERS[task_id]
+    
+    raise ValueError(f"No grader found for task {task_id}")
